@@ -1,39 +1,37 @@
 package com.github.yafeiwang1240.sparkoperator.transformation.keyvalue;
 
 import com.github.yafeiwang1240.Function;
+import org.apache.spark.HashPartitioner;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.api.java.function.Function2;
 import scala.Tuple2;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 /**
- * 说明：spark算子，mapValues
- * 特点：输入分区与输出分区一对一
- * 执行：mapValues算子在executor端执行
- * sql: change
+ * 说明：spark算子，partitionBy
+ * 特点：单个RDD聚集
+ * 执行：partitionBy算子在executor端执行分区
+ * sql: 开窗
  * @author wangyafei
  */
-public class MapValues implements Function {
+public class PartitionBy implements Function {
 
     @Override
     public void function() {
-        SparkConf sparkConf = new SparkConf().setAppName("mapValues");
+        Random random = new Random(47);
+        SparkConf sparkConf = new SparkConf().setAppName("partitionBy");
         JavaSparkContext sc = new JavaSparkContext(sparkConf);
         List<Tuple2<String, Integer>> list = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
-            list.add(new Tuple2("name" + i, i));
+            list.add(new Tuple2("name" + (i % 5 + random.nextInt(2)), i));
         }
         JavaPairRDD<String, Integer> rdd = sc.parallelizePairs(list);
-        JavaPairRDD<String, Integer> newRdd = rdd.mapValues(new org.apache.spark.api.java.function.Function<Integer, Integer>() {
-            @Override
-            public Integer call(Integer v1) throws Exception {
-                System.out.println("--------------------------I am mapValues--------------");
-                return ++v1;
-            }
-        });
+        JavaPairRDD<String, Integer> newRdd = rdd.partitionBy(new HashPartitioner(3));
         newRdd.collect().stream().forEach(System.out::println);
     }
 }

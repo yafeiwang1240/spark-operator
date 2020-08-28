@@ -202,7 +202,7 @@ Spark的算子的分类
      |   m3  |      |   v'4  |
      |   m4  |       --------
       ------- 
-      
+
 　图 5  union 算子对 RDD 转换　
 
  
@@ -290,7 +290,17 @@ filter 函数功能是对元素进行过滤，对每个 元 素 应 用 f 函 �
 　　（10）subtract
 　　subtract相当于进行集合的差操作，RDD 1去除RDD 1和RDD 2交集中的所有元素。图10中左侧的大方框代表两个RDD，大方框内的小方框代表RDD的分区。 右侧大方框
 代表合并后的RDD，大方框内的小方框代表分区。 V1在两个RDD中均有，根据差集运算规则，新RDD不保留，V2在第一个RDD有，第二个RDD没有，则在新RDD元素中包含V2。
-　
+
+```
+  -------        
+ |   v1  |
+ |   v2  |      
+  -------        -------
+  -------   ->  |   v2  |
+ |   v1  |       -------
+ |   v3  |       
+  ------- 
+```
 
 　　　　　　　　　　图10   subtract算子对RDD转换
 
@@ -299,14 +309,21 @@ filter 函数功能是对元素进行过滤，对每个 元 素 应 用 f 函 �
 　　（11） sample
 
        sample 将 RDD 这个集合内的元素进行采样，获取所有元素的子集。用户可以设定是否有放回的抽样、百分比、随机种子，进而决定采样方式。内部实现是生成 SampledRDD(withReplacement， fraction， seed)。
-　　函数参数设置：
-‰ 　　withReplacement=true，表示有放回的抽样。
-‰ 　　withReplacement=false，表示无放回的抽样。
-　　图 11中 的 每 个 方 框 是 一 个 RDD 分 区。 通 过 sample 函 数， 采 样 50% 的 数 据。V1、 V2、 U1、 U2、U3、U4 采样出数据 V1 和 U1、 U2 形成新的 RDD。
+　　函数参数设置
 
-​     
+​     　　withReplacement=true，表示有放回的抽样。
 
- 
+​     　　withReplacement=false，表示无放回的抽样。
+　　图 11中 的 每 个 方 框 是 一 个 RDD 分 区。 通 过 sample 函 数， 采 样 50% 的 数 据。V1、 V2、V3、V4 采样出数据 V1 、V4形成新的 RDD。
+
+```
+  -------        
+ |   v1  |       -------
+ |   v2  |      |   v1  |
+ |   v3  |  ->  |   v4  |
+ |   v4  |       -------
+  -------        
+```
 
 　　　　　　　图11  sample 算子对 RDD 转换
 
@@ -315,11 +332,16 @@ filter 函数功能是对元素进行过滤，对每个 元 素 应 用 f 函 �
 　　（12）takeSample
 　　takeSample（）函数和上面的sample函数是一个原理，但是不使用相对比例采样，而是按设定的采样个数进行采样，同时返回结果不再是RDD，而是相当于对采样后的数据进行
 Collect（），返回结果的集合为单机的数组。
-　　图12中左侧的方框代表分布式的各个节点上的分区，右侧方框代表单机上返回的结果数组。 通过takeSample对数据采样，设置为采样一份数据，返回结果为V1。
+　　图12中左侧的方框代表分布式的各个节点上的分区，右侧方框代表单机上返回的结果数组。 通过takeSample对数据采样，设置为采样一份数据，返回结果为V1、V3。
 
- 
-
- 
+```
+  -------        
+ |   v1  |     
+ |   v2  |       --------
+ |   v3  |  ->  |[v1, v3]|
+ |   v4  |       --------
+  -------     
+```
 
 　　　　图12  　　takeSample算子对RDD转换
 
@@ -327,10 +349,18 @@ Collect（），返回结果的集合为单机的数组。
 
 　　（13） cache
 
-     cache 将 RDD 元素从磁盘缓存到内存。 相当于 persist(MEMORY_ONLY) 函数的功能。
-     图13 中每个方框代表一个 RDD 分区，左侧相当于数据分区都存储在磁盘，通过 cache 算子将数据缓存在内存。
+​        cache 将 RDD 元素从磁盘缓存到内存。 相当于 persist(MEMORY_ONLY) 函数的功能。
+ 图13 中每个方框代表一个 RDD 分区，左侧相当于数据分区都存储在磁盘，通过 cache 算子将数据缓存在内存。
 
-
+```
+   DISK            MEM
+  -------        -------
+ |   v1  |      |   v1  |
+ |   v2  |      |   v2  |
+ |   v3  |  ->  |   v3  |
+ |   v4  |      |   v4  |
+  -------        -------
+```
 
 
 　　　　　　图 13 Cache 算子对 RDD 转换
@@ -339,43 +369,55 @@ Collect（），返回结果的集合为单机的数组。
 
 　　（14） persist
 
-      persist 函数对 RDD 进行缓存操作。数据缓存在哪里依据 StorageLevel 这个枚举类型进行确定。 有以下几种类型的组合（见10）， DISK 代表磁盘，MEMORY 代表内存， SER 代表数据是否进行序列化存储。
+​        persist 函数对 RDD 进行缓存操作。数据缓存在哪里依据 StorageLevel 这个枚举类型进行确定。 有以下几种类型的组合（见10）， DISK 代表磁盘，MEMORY 代表内存， SER 代表数据是否进行序列化存储。
 
 　　下面为函数定义， StorageLevel 是枚举类型，代表存储模式，用户可以通过图 14-1 按需进行选择。
 　　persist(newLevel:StorageLevel)
 　　图 14-1 中列出persist 函数可以进行缓存的模式。例如，MEMORY_AND_DISK_SER 代表数据可以存储在内存和磁盘，并且以序列化的方式存储，其他同理。
 
+```
+   DISK            MEM
+  -------        -------
+ |   v1  |      |   v1  |
+ |   v2  |      |   v2  |
+ |   v3  |  ->  |   v3  |
+ |   v4  |      |   v4  |
+  -------        -------
+```
 
 
- 
+　　　　　　　图 14-1  persist 算子对 RDD 转换
 
+　　图 14-2 中方框代表 RDD 分区。 disk 代表存储在磁盘， mem 代表存储在内存。数据最初全部存储在磁盘，通过 persist(MEMORY_AND_DISK) 将数据缓存到内存，但是有的分区无法容纳在内存，将含有 V1、 V2、 V3 的RDD存储到磁盘，将含有U1的RDD仍旧存储在内存。
 
-　　　　　　　　　　　　图 14-1  persist 算子对 RDD 转换
+```
+   DISK        MEM ADN DISK
+  -------        -------
+ |   v1  |      |   v1  |
+ |   v2  |      |   v2  |
+ |   v3  |  ->  |   v3  |
+ |   u1  |      |   u1  |
+  -------        -------
+```
 
-　　图 14-2 中方框代表 RDD 分区。 disk 代表存储在磁盘， mem 代表存储在内存。数据最初全部存储在磁盘，通过 persist(MEMORY_AND_DISK) 将数据缓存到内存，但是有的分区无法容纳在内存，将含有 V1、 V2、 V3 的RDD存储到磁盘，将含有U1，U2的RDD仍旧存储在内存。
-
- 
-
- 
-
- 
-
-      图 14-2   Persist 算子对 RDD 转换
-
- 
+　　　　　　 图 14-2   Persist 算子对 RDD 转换
 
 
 
 　　（15） mapValues
 
-      mapValues ：针对（Key， Value）型数据中的 Value 进行 Map 操作，而不对 Key 进行处理。
-    
-    图 15 中的方框代表 RDD 分区。 a=>a+2 代表对 (V1,1) 这样的 Key Value 数据对，数据只对 Value 中的 1 进行加 2 操作，返回结果为 3。
+​      mapValues ：针对（Key， Value）型数据中的 Value 进行 Map 操作，而不对 Key 进行处理。
 
+​      图 15 中的方框代表 RDD 分区。 a=>a+2 代表对 (V1,1) 这样的 Key Value 数据对，数据只对 Value 中的 1 进行加 2 操作，返回结果为 3。
 
-​     
-
- 
+```
+  -------        --------
+ |(k1,v1)|      |(k1,v'1)|
+ |(k2,v2)|      |(k2,v'2)|
+ |(k3,v3)|  ->  |(k3,v'3)|
+ |(k4,v4)|      |(k4,v'4)|
+  -------        --------
+```
 
 　　　　　　图 15   mapValues 算子 RDD 对转换
 
@@ -383,7 +425,7 @@ Collect（），返回结果的集合为单机的数组。
 
 　　（16） combineByKey
 
-　　下面代码为 combineByKey 函数的定义：
+　下面代码为 combineByKey 函数的定义：
 　　combineByKey[C](createCombiner:(V) C,
 　　mergeValue:(C, V) C,
 　　mergeCombiners:(C, C) C,
@@ -392,20 +434,27 @@ Collect（），返回结果的集合为单机的数组。
 　　serializer:Serializer=null):RDD[(K,C)]
 
 说明：
-‰ 　　createCombiner： V => C， C 不存在的情况下，比如通过 V 创建 seq C。
-‰　　 mergeValue： (C， V) => C，当 C 已经存在的情况下，需要 merge，比如把 item V
+ 　　createCombiner： V => C， C 不存在的情况下，比如通过 V 创建 seq C。
+　　 mergeValue： (C， V) => C，当 C 已经存在的情况下，需要 merge，比如把 item V
 加到 seq C 中，或者叠加。
 　　 mergeCombiners： (C， C) => C，合并两个 C。
-‰ 　　partitioner： Partitioner, Shuff le 时需要的 Partitioner。
-‰ 　　mapSideCombine ： Boolean = true，为了减小传输量，很多 combine 可以在 map
+
+ 　　partitioner： Partitioner, Shuff le 时需要的 Partitioner。
+ 　　mapSideCombine ： Boolean = true，为了减小传输量，很多 combine 可以在 map
 端先做，比如叠加，可以先在一个 partition 中把所有相同的 key 的 value 叠加，
 再 shuff le。
-‰ 　　serializerClass： String = null，传输需要序列化，用户可以自定义序列化类：
+ 　　serializerClass： String = null，传输需要序列化，用户可以自定义序列化类：
 
 　　例如，相当于将元素为 (Int， Int) 的 RDD 转变为了 (Int， Seq[Int]) 类型元素的 RDD。图 16中的方框代表 RDD 分区。如图，通过 combineByKey， 将 (V1,2)， (V1,1)数据合并为（ V1,Seq(2,1)）。
-　　
 
- 
+```
+  -------        
+ |(k1,v1)|       --------
+ |(k1,v2)|      |(k1,v'2)|
+ |(k2,v3)|  ->  |(k2,v'3)|
+ |(k3,v4)|      |(k3,v'4)|
+  -------        --------
+```
 
 　　　　　　图 16  comBineByKey 算子对 RDD 转换
 
@@ -413,16 +462,22 @@ Collect（），返回结果的集合为单机的数组。
 
 　　（17） reduceByKey
 
-     reduceByKey 是比 combineByKey 更简单的一种情况，只是两个值合并成一个值，（ Int， Int V）to （Int， Int C），比如叠加。所以 createCombiner reduceBykey 很简单，就是直接返回 v，而 mergeValue和 mergeCombiners 逻辑是相同的，没有区别。
-    函数实现：
-    def reduceByKey(partitioner: Partitioner, func: (V, V) => V): RDD[(K, V)]
-= {
-combineByKey[V]((v: V) => v, func, func, partitioner)
-}
-　　图17中的方框代表 RDD 分区。通过用户自定义函数 (A,B) => (A + B) 函数，将相同 key 的数据 (V1,2) 和 (V1,1) 的 value 相加运算，结果为（ V1,3）。
-     
+​         reduceByKey 是比 combineByKey 更简单的一种情况，只是两个值合并成一个值，（ Int， Int V）to （Int， Int C），比如叠加。所以 createCombiner reduceBykey 很简单，就是直接返回 v，而 mergeValue和 mergeCombiners 逻辑是相同的，没有区别。
+函数实现：
 
- 
+    def reduceByKey(partitioner: Partitioner, func: (V, V) => V): RDD[(K, V)] = {
+        combineByKey[V]((v: V) => v, func, func, partitioner)
+    }
+　　图17中的方框代表 RDD 分区。通过用户自定义函数 (A,B) => (A + B) 函数，将相同 key 的数据 (V1,2) 和 (V1,1) 的 value 相加运算，结果为（ V1,3）。
+
+```
+  -------        
+ |(k1,v1)|       --------
+ |(k1,v2)|      |(k1,v'1)|
+ |(k2,v3)|  ->  |(k2,v'3)|
+ |(k3,v4)|      |(k3,v'4)|
+  -------        --------
+```
 
 　　　　　　　　图 17 reduceByKey 算子对 RDD 转换
 
@@ -433,28 +488,40 @@ combineByKey[V]((v: V) => v, func, func, partitioner)
 　　函数定义如下。
 　　partitionBy（partitioner：Partitioner）
 　　如果原有RDD的分区器和现有分区器（partitioner）一致，则不重分区，如果不一致，则相当于根据分区器生成一个新的ShuffledRDD。
-　　图18中的方框代表RDD分区。 通过新的分区策略将原来在不同分区的V1、 V2数据都合并到了一个分区。
+　　图18中的方框代表RDD分区。 通过新的分区策略将原来在同一分区的分到了不同分区。
 
+```
+  -------        --------
+ |(k1,v1)|      |(k1,v'1)|
+ |(k2,v2)|      |(k2,v'2)|
+ |(k3,v3)|  ->   --------
+ |(k4,v4)|      |(k4,v'4)|
+  -------       |(k3,v'3)| 
+                 --------
+```
 
-
-
-
-
-　　　　图18　　partitionBy算子对RDD转换
+　　　　　　图18　　partitionBy算子对RDD转换
 
  
 
  （19）Cogroup
  　　cogroup函数将两个RDD进行协同划分，cogroup函数的定义如下。
-　　cogroup[W]（other： RDD[（K， W）]， numPartitions： Int）： RDD[（K， （Iterable[V]， Iterable[W]））]
-　　对在两个RDD中的Key-Value类型的元素，每个RDD相同Key的元素分别聚合为一个集合，并且返回两个RDD中对应Key的元素集合的迭代器。
+　　 cogroup[W]（other： RDD[（K， W）]， numPartitions： Int）： RDD[（K， （Iterable[V]， Iterable[W]））]
+　　 对在两个RDD中的Key-Value类型的元素，每个RDD相同Key的元素分别聚合为一个集合，并且返回两个RDD中对应Key的元素集合的迭代器。
 　　（K， （Iterable[V]， Iterable[W]））
-　　其中，Key和Value，Value是两个RDD下相同Key的两个数据集合的迭代器所构成的元组。
+　　 其中，Key和Value，Value是两个RDD下相同Key的两个数据集合的迭代器所构成的元组。
 　　图19中的大方框代表RDD，大方框内的小方框代表RDD中的分区。 将RDD1中的数据（U1，1）、 （U1，2）和RDD2中的数据（U1，2）合并为（U1，（（1，2），（2）））。
 
- 
-
- 
+```
+  -------       
+ |(k1,v1)|       ------------------
+ |(k1,v2)|      |(k1,([v1,v2],[v3])|
+ |(k4,v4)|  ->  |(k4,([v4],[])     |
+  -------       |(k3,([], [v3])    | 
+ |(k1,v3)|       ------------------
+ |(k3,v3)| 
+  -------
+```
 
 　　　　　　　　图19  Cogroup算子对RDD转换
 
@@ -462,53 +529,75 @@ combineByKey[V]((v: V) => v, func, func, partitioner)
 
  　　（20） join
 
-       join 对两个需要连接的 RDD 进行 cogroup函数操作，将相同 key 的数据能够放到一个分区，在 cogroup 操作之后形成的新 RDD 对每个key 下的元素进行笛卡尔积的操作，返回的结果再展平，对应 key 下的所有元组形成一个集合。最后返回 RDD[(K， (V， W))]。
+​        join 对两个需要连接的 RDD 进行 cogroup函数操作，将相同 key 的数据能够放到一个分区，在 cogroup 操作之后形成的新 RDD 对每个key 下的元素进行笛卡尔积的操作，返回的结果再展平，对应 key 下的所有元组形成一个集合。最后返回 RDD[(K， (V， W))]。
+
 　　下 面 代 码 为 join 的 函 数 实 现， 本 质 是通 过 cogroup 算 子 先 进 行 协 同 划 分， 再 通 过flatMapValues 将合并的数据打散。
-       this.cogroup(other,partitioner).f latMapValues{case(vs,ws) => for(v<-vs;w<-ws)yield(v,w) }
-图 20是对两个 RDD 的 join 操作示意图。大方框代表 RDD，小方框代表 RDD 中的分区。函数对相同 key 的元素，如 V1 为 key 做连接后结果为 (V1,(1,1)) 和 (V1,(1,2))。
 
+```scala
+this.cogroup(other,partitioner).f latMapValues{case(vs,ws) => for(v<-vs;w<-ws)yield(v,w) }
+```
 
+​        图 20是对两个 RDD 的 join 操作示意图。大方框代表 RDD，小方框代表 RDD 中的分区。函数对相同 key 的元素，如 V1 为 key 做连接后结果为 (V1,(1,1)) 和 (V1,(1,2))。
+
+```
+  -------       
+ |(k1,v1)|       
+ |(k4,v4)|       -------------
+  -------   ->  |(k4,(v4,null)|
+  -------       |(k1,(v1,v3)  |
+ |(k1,v3)|       -------------
+ |(k3,v3)| 
+  -------
+```
+
+　             图 20   join 算子对 RDD 转换
 
  
 
-
-　　　　　　　　　　　　　　　　　　　　图 20   join 算子对 RDD 转换
-
- 
-
-　　（21）eftOutJoin和rightOutJoin
+　　（21）leftOutJoin和rightOutJoin
 　　LeftOutJoin（左外连接）和RightOutJoin（右外连接）相当于在join的基础上先判断一侧的RDD元素是否为空，如果为空，则填充为空。 如果不为空，则将数据进行连接运算，并
 返回结果。
 下面代码是leftOutJoin的实现。
+
+```
 if （ws.isEmpty） {
 vs.map（v => （v， None））
 } else {
 for （v <- vs； w <- ws） yield （v， Some（w））
 }
+```
 
- 
+
 
 2. Actions 算子
 
 　　本质上在 Action 算子中通过 SparkContext 进行了提交作业的 runJob 操作，触发了RDD DAG 的执行。
 例如， Action 算子 collect 函数的代码如下，感兴趣的读者可以顺着这个入口进行源码剖析：
 
+```
 /**
-* Return an array that contains all of the elements in this RDD.
-*/
+  *Return an array that contains all of the elements in this RDD.
+  */
 def collect(): Array[T] = {
 /* 提交 Job*/
-val results = sc.runJob(this, (iter: Iterator[T]) => iter.toArray)
-Array.concat(results: _*)
+    val results = sc.runJob(this, (iter: Iterator[T]) => iter.toArray)
+    Array.concat(results: _*)
 }
+```
 
 
 　　（22） foreach
 
 　　foreach 对 RDD 中的每个元素都应用 f 函数操作，不返回 RDD 和 Array， 而是返回Uint。图22表示 foreach 算子通过用户自定义函数对每个数据项进行操作。本例中自定义函数为 println()，控制台打印所有数据项。
-　　
 
- 
+```
+  -------       
+ |   v1  |         v'1  
+ |   v2  |         v'2  
+ |   v3  |  ->     v'3 
+ |   v4  |         v'4
+  -------        
+```
 
 　　　　　　图 22 foreach 算子对 RDD 转换
 
