@@ -24,8 +24,7 @@ public class Aggregate implements Function {
         JavaSparkContext sc = new JavaSparkContext(sparkConf);
         List<Integer> list = Arrays.asList(1, 2, 6, 4, 3, 8, 9, 10, 12, 11, 9, 4, 5, 6, 7);
         JavaRDD<Integer> rdd = sc.parallelize(list);
-        Integer integer =
-        rdd.aggregate(1, new Function2<Integer, Integer, Integer>() {
+        Integer integer = rdd.aggregate(1, new Function2<Integer, Integer, Integer>() {
             @Override
             public Integer call(Integer integer, Integer integer2) throws Exception {
                 return Math.max(integer, integer2);

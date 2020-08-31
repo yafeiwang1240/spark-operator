@@ -534,7 +534,7 @@ Collect（），返回结果的集合为单机的数组。
 　　下 面 代 码 为 join 的 函 数 实 现， 本 质 是通 过 cogroup 算 子 先 进 行 协 同 划 分， 再 通 过flatMapValues 将合并的数据打散。
 
 ```scala
-this.cogroup(other,partitioner).f latMapValues{case(vs,ws) => for(v<-vs;w<-ws)yield(v,w) }
+this.cogroup(other,partitioner).flatMapValues{case(vs,ws) => for(v<-vs;w<-ws)yield(v,w) }
 ```
 
 ​        图 20是对两个 RDD 的 join 操作示意图。大方框代表 RDD，小方框代表 RDD 中的分区。函数对相同 key 的元素，如 V1 为 key 做连接后结果为 (V1,(1,1)) 和 (V1,(1,2))。
@@ -609,27 +609,45 @@ def collect(): Array[T] = {
 
 下面为 saveAsTextFile 函数的内部实现，其内部
 　　通过调用 saveAsHadoopFile 进行实现：
+
+```
 this.map(x => (NullWritable.get(), new Text(x.toString))).saveAsHadoopFile[TextOutputFormat[NullWritable, Text]](path)
+```
+
 将 RDD 中的每个元素映射转变为 (null， x.toString)，然后再将其写入 HDFS。
 　　图 23中左侧方框代表 RDD 分区，右侧方框代表 HDFS 的 Block。通过函数将RDD 的每个分区存储为 HDFS 中的一个 Block。
 
-　　
+```
+  -------          hdfs
+ |   v1  |      SequenceFile
+ |   v2  |       ---------
+ |   v3  |  ->  |part-0000|
+ |   v4  |       ---------
+  -------     
+```
 
- 
-
-　　　　　　　　　　　　图 23   saveAsHadoopFile 算子对 RDD 转换
+　　　　　　　　　　图 23   saveAsHadoopFile 算子对 RDD 转换
 
  
 
   （24）saveAsObjectFile
 　　saveAsObjectFile将分区中的每10个元素组成一个Array，然后将这个Array序列化，映射为（Null，BytesWritable（Y））的元素，写入HDFS为SequenceFile的格式。
 　　下面代码为函数内部实现。
+
+```
 　　map（x=>（NullWritable.get（），new BytesWritable（Utils.serialize（x））））
+```
+
 　　图24中的左侧方框代表RDD分区，右侧方框代表HDFS的Block。 通过函数将RDD的每个分区存储为HDFS上的一个Block。
 
- 
-
- 
+```
+  -------        
+ |   v1  |        hfd
+ |   v2  |       --------------
+ |   v3  |  ->  |hdfs part-0000|
+ |   v4  |       --------------
+  -------     
+```
 
 　　　　　　　　　　　　图24 saveAsObjectFile算子对RDD转换
 
@@ -640,11 +658,18 @@ this.map(x => (NullWritable.get(), new Text(x.toString))).saveAsHadoopFile[TextO
 　　collect 相当于 toArray， toArray 已经过时不推荐使用， collect 将分布式的 RDD 返回为一个单机的 scala Array 数组。在这个数组上运用 scala 的函数式操作。
 　　图 25中左侧方框代表 RDD 分区，右侧方框代表单机内存中的数组。通过函数操作，将结果返回到 Driver 程序所在的节点，以数组形式存储。
 
- 
+```
+  -------        
+ |   v1  |
+ |   v2  |      
+  -------        -----------
+  -------   ->  |v1,v1,v2,v3|
+ |   v1  |       -----------
+ |   v3  |       
+  ------- 
+```
 
- 
-
-　　图 25   Collect 算子对 RDD 转换　
+　　　　　　　　　　图 25   Collect 算子对 RDD 转换　
 
  
 
@@ -652,11 +677,16 @@ this.map(x => (NullWritable.get(), new Text(x.toString))).saveAsHadoopFile[TextO
 　　collectAsMap对（K，V）型的RDD数据返回一个单机HashMap。 对于重复K的RDD元素，后面的元素覆盖前面的元素。
 　　图26中的左侧方框代表RDD分区，右侧方框代表单机数组。 数据通过collectAsMap函数返回给Driver程序计算结果，结果以HashMap形式存储。
 
- 
-
- 
-
- 
+```
+  -------        
+ |(k1,v1)|
+ |(k2,v2)|      
+  -------        ------------------------
+  -------   ->  |((k1,v4),(k2,v2),(k3,v3)|
+ |(k1,v4)|       ------------------------
+ |(k3,v3)|       
+  ------- 
+```
 
 　　　　　　　　　　图26 CollectAsMap算子对RDD转换
 
@@ -665,7 +695,7 @@ this.map(x => (NullWritable.get(), new Text(x.toString))).saveAsHadoopFile[TextO
  　　（27）reduceByKeyLocally
 　　实现的是先reduce再collectAsMap的功能，先对RDD的整体进行reduce操作，然后再收集所有结果返回为一个HashMap。
 
- 
+ 　　　　　　
 
  　　（28）lookup
 下面代码为lookup的声明。
@@ -673,9 +703,16 @@ lookup（key：K）：Seq[V]
 Lookup函数对（Key，Value）型的RDD操作，返回指定Key对应的元素形成的Seq。 这个函数处理优化的部分在于，如果这个RDD包含分区器，则只会对应处理K所在的分区，然后返回由（K，V）形成的Seq。 如果RDD不包含分区器，则需要对全RDD元素进行暴力扫描处理，搜索指定K对应的元素。
 　　图28中的左侧方框代表RDD分区，右侧方框代表Seq，最后结果返回到Driver所在节点的应用中。
 
- 
-
- 
+```
+  -------        
+ |(k1,v1)|
+ |(k2,v2)|        k2
+  -------        -------
+  -------   ->  |(k2,v2)|
+ |(k1,v4)|       -------
+ |(k3,v3)|       
+  ------- 
+```
 
 　　　　　　图28  lookup对RDD转换
 
@@ -683,15 +720,25 @@ Lookup函数对（Key，Value）型的RDD操作，返回指定Key对应的元素
 
 　　（29） count
 
-
 　　count 返回整个 RDD 的元素个数。
 　　内部函数实现为：
+
+```
 　　defcount():Long=sc.runJob(this,Utils.getIteratorSize_).sum
-　　图 29中，返回数据的个数为 5。一个方块代表一个 RDD 分区。
+```
 
+　　图 29中，返回数据的个数为 4。一个方块代表一个 RDD 分区。
 
-
- 
+```
+  -------        
+ |(k1,v1)|
+ |(k2,v2)|       
+  -------        
+  -------   ->  4
+ |(k1,v4)|      
+ |(k3,v3)|       
+  ------- 
+```
 
 
 　　　　 图29 count 对 RDD 算子转换
@@ -718,15 +765,20 @@ top（num：Int）（implicit ord：Ordering[T]）：Array[T]
 　　例如：用户自定义函数如下。
 　　f：（A，B）=>（A._1+”@”+B._1，A._2+B._2）
 　　图31中的方框代表一个RDD分区，通过用户自定函数f将数据进行reduce运算。 示例
-最后的返回结果为V1@[1]V2U！@U2@U3@U4，12。
+最后的返回结果为k1@k2@k1@k3,v。
 
- 
+```
+  -------        
+ |(k1,v1)|
+ |(k2,v2)|       
+  -------        
+  -------   ->  k1@k2@k1@k3,v
+ |(k1,v4)|      
+ |(k3,v3)|       
+  ------- 
+```
 
- 
-
- 
-
-图31 reduce算子对RDD转换
+　　　　 图31 reduce算子对RDD转换
 
  
 
@@ -735,14 +787,18 @@ top（num：Int）（implicit ord：Ordering[T]）：Array[T]
 　　图32中通过下面的用户自定义函数进行fold运算，图中的一个方框代表一个RDD分区。 读者可以参照reduce函数理解。
 　　fold（（”V0@”，2））（ （A，B）=>（A._1+”@”+B._1，A._2+B._2））
 
- 
+```
+  -------        
+ |(k1,v1)|
+ |(k2,v2)|       
+  -------        
+  -------   ->  v0@k1@k2@k1@k3,v
+ |(k1,v4)|      
+ |(k3,v3)|       
+  ------- 
+```
 
-
-
- 
-
-
-　　　　　　　　　　图32  fold算子对RDD转换
+​                           图32  fold算子对RDD转换
 
  
 
@@ -757,12 +813,18 @@ aggregate[B]（z： B）（seqop： （B，A） => B，combop： （B，B） => 
 　　广播（broadcast）变量：其广泛用于广播Map Side Join中的小表，以及广播大变量等场景。 这些数据集合在单节点内存能够容纳，不需要像RDD那样在节点之间打散存储。
 Spark运行时把广播变量数据发到各个节点，并保存下来，后续计算可以复用。 相比Hadoo的distributed cache，广播的内容可以跨作业共享。 Broadcast的底层实现采用了BT机制。
 
+```
+  -------        
+ |(k1,v1)|
+ |(k2,v2)|       
+  -------        
+  -------   ->  v0@k1@k2@k1@k3,v
+ |(k1,v4)|      
+ |(k3,v3)|       
+  ------- 
+```
 
-
- 
-
-
-　　　　　　　　图33  aggregate算子对RDD转换
+​                           图33  aggregate算子对RDD转换
 
 　　②代表V。
 　　③代表U。
