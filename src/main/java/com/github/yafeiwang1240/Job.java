@@ -1,10 +1,10 @@
 package com.github.yafeiwang1240;
 
-import com.github.yafeiwang1240.sparkoperator.action.SortByKey;
+import com.github.yafeiwang1240.sparkoperator.output.PrintSink;
 
 public class Job {
     public static void main(String[] args) {
-        Function function = new SortByKey();
+        Function function = new PrintSink();
         function.function();
     }
 }
