@@ -26,8 +26,10 @@ import java.util.List;
 public class PrintSink implements Function {
     @Override
     public void function() {
-        SparkConf sparkConf = new SparkConf().setAppName("printSink");
-        JavaSparkContext sc = new JavaSparkContext(sparkConf);
+        SparkSession session = SparkSession.builder().appName("printSink")
+                .enableHiveSupport().getOrCreate();
+        JavaSparkContext sc = new JavaSparkContext(session.sparkContext());
+
         List<Tuple2<String, Integer>> list = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
             list.add(new Tuple2("n" + i, i));
@@ -39,7 +41,7 @@ public class PrintSink implements Function {
                 return RowFactory.create(v1._1(), v1._2());
             }
         });
-        SparkSession session = new SparkSession(sc.sc());
+
         session.createDataset(rowRDD.rdd(), RowEncoder.apply(new StructType(new StructField[]{
                 new StructField("name", DataTypes.StringType, false, Metadata.empty()),
                 new StructField("value", DataTypes.IntegerType, false, Metadata.empty())
