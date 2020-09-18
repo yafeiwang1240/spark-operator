@@ -10,6 +10,7 @@
 
     <properties>
         <spark.version>2.4.0</spark.version>
+        <redis.version>3.3.0</redis.version>
     </properties>
 
     <dependencies>
@@ -23,6 +24,12 @@
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-mllib_2.11</artifactId>
             <version>${spark.version}</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/redis.clients/jedis -->
+        <dependency>
+            <groupId>redis.clients</groupId>
+            <artifactId>jedis</artifactId>
+            <version>${redis.version}</version>
         </dependency>
     </dependencies>
 
