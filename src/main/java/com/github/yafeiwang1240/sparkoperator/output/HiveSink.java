@@ -6,6 +6,7 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.ForeachPartitionFunction;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
+import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.encoders.RowEncoder;
 import org.apache.spark.sql.types.DataTypes;
@@ -22,10 +23,10 @@ import java.util.List;
  * dataset output
  * @author wangyafei
  */
-public class PrintSink implements Function {
+public class HiveSink implements Function {
     @Override
     public void function() {
-        SparkSession session = SparkSession.builder().appName("printSink")
+        SparkSession session = SparkSession.builder().appName("hiveSink")
                 .enableHiveSupport().getOrCreate();
         JavaSparkContext sc = new JavaSparkContext(session.sparkContext());
 
@@ -44,14 +45,8 @@ public class PrintSink implements Function {
         session.createDataset(rowRDD.rdd(), RowEncoder.apply(new StructType(new StructField[]{
                 new StructField("name", DataTypes.StringType, false, Metadata.empty()),
                 new StructField("value", DataTypes.IntegerType, false, Metadata.empty())
-        }))).foreachPartition(new ForeachPartitionFunction<Row>() {
-            @Override
-            public void call(Iterator<Row> t) throws Exception {
-                while (t.hasNext()) {
-                    System.out.println(t.next().toString());
-                }
-            }
-        });
+        }))).registerTempTable("temp_row_number_test");
+        session.sql("insert overwrite table row_number_test partition(p_date = '20200917') select * from temp_row_number_test");
         session.close();
     }
 }
