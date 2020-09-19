@@ -11,6 +11,7 @@
     <properties>
         <spark.version>2.4.0</spark.version>
         <redis.version>3.3.0</redis.version>
+        <es.version>6.7.2</es.version>
     </properties>
 
     <dependencies>
@@ -30,6 +31,12 @@
             <groupId>redis.clients</groupId>
             <artifactId>jedis</artifactId>
             <version>${redis.version}</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/org.elasticsearch/elasticsearch -->
+        <dependency>
+            <groupId>org.elasticsearch.client</groupId>
+            <artifactId>transport</artifactId>
+            <version>${es.version}</version>
         </dependency>
     </dependencies>
 
