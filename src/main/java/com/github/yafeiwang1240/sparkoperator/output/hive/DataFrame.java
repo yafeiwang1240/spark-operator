@@ -3,6 +3,7 @@ package com.github.yafeiwang1240.sparkoperator.output.hive;
 import com.github.yafeiwang1240.Function;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.sql.Row;
+import org.apache.spark.sql.RowFactory;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.Metadata;
@@ -23,7 +24,14 @@ public class DataFrame implements Function {
             session = SparkSession.builder().appName("dataFrame")
                     .enableHiveSupport().getOrCreate();
             org.apache.spark.sql.Dataset<Row> ds = session.sql("select c_name as name, c_workyear as value from user_c limit 100");
-            RDD<Row> rows = ds.toJavaRDD().filter(Objects::nonNull).rdd();
+            RDD<Row> rows = ds.toJavaRDD().map(new org.apache.spark.api.java.function.Function<Row, Row>() {
+                @Override
+                public Row call(Row v1) throws Exception {
+                    Integer value = v1.getAs("value");
+                    String name = v1.getAs("name");
+                    return RowFactory.create(name, value);
+                }
+            }).filter(Objects::nonNull).rdd();
             session.createDataFrame(rows, new StructType(new StructField[]{
                     new StructField("name", DataTypes.StringType, false, Metadata.empty()),
                     new StructField("value", DataTypes.IntegerType, false, Metadata.empty())

@@ -24,6 +24,7 @@ import java.util.List;
  * @author wangyafei
  */
 public class HiveSink implements Function {
+
     @Override
     public void function() {
         SparkSession session = SparkSession.builder().appName("hiveSink")
@@ -41,6 +42,18 @@ public class HiveSink implements Function {
                 return RowFactory.create(v1._1(), v1._2());
             }
         });
+
+        rowRDD = rowRDD.union(rdd.filter(new org.apache.spark.api.java.function.Function<Tuple2<String, Integer>, Boolean>() {
+            @Override
+            public Boolean call(Tuple2<String, Integer> v1) throws Exception {
+                return v1._2() % 2 == 1;
+            }
+        }).map(new org.apache.spark.api.java.function.Function<Tuple2<String, Integer>, Row>() {
+            @Override
+            public Row call(Tuple2<String, Integer> v1) throws Exception {
+                return RowFactory.create(v1._1(), v1._2());
+            }
+        }));
 
         session.createDataset(rowRDD.rdd(), RowEncoder.apply(new StructType(new StructField[]{
                 new StructField("name", DataTypes.StringType, false, Metadata.empty()),
