@@ -34,7 +34,7 @@ public class Filter implements Function {
 
     @Override
     public void function() {
-        functionGenerics();
+        functionError();
     }
 
     /**
