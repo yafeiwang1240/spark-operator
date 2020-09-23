@@ -26,7 +26,7 @@ public class DataFrame2 implements Function {
             session = SparkSession.builder().appName("dataFrame")
                     .enableHiveSupport().getOrCreate();
             org.apache.spark.sql.Dataset<Row> ds = session.sql("select c_name as name, c_workyear as value from user_c limit 100");
-            JavaRDD<KeyValue> rows = ds.toJavaRDD().filter(Objects::nonNull).map(KeyValue::new);
+            JavaRDD<KeyValue> rows = ds.toJavaRDD().map(KeyValue::new);
             RDD<KeyValue> rdd = rows.filter(Objects::nonNull).rdd();
             session.createDataFrame(rdd, KeyValue.class).registerTempTable("temp_pub_insert_test");
             session.sql("insert overwrite table pub_insert_test partition(p_date = '20200914') select * from temp_pub_insert_test");
