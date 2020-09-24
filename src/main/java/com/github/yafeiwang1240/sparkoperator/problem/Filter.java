@@ -18,7 +18,8 @@ import java.util.Objects;
  *     不同的job也不行{@link #functionErrorJob()}
  *     使用泛型函数也会报错{@link #functionGenerics()}
  * </p>
- * 原因就是spark在执行第二个相同的算子时，
+ * 原因就是spark在执行第二个相同的算子时，调用了第一个函数，这个是scala 在做eta-conversion
+ *  的反过程eta-expansion, 默认第二个算子函数和第一个相同，并且设置了参数类型
  *
  * no error
  * <p>
@@ -34,11 +35,11 @@ public class Filter implements Function {
 
     @Override
     public void function() {
-        functionError();
+        functionLambdaFunction();
     }
 
     /**
-     * java.lang.ClassCastException: com.github.yafeiwang1240.sparkoperator.output.hive.DataFrame2$KeyValue
+     * java.lang.ClassCastException: com.github.yafeiwang1240.sparkoperator.problem.Filter$KeyValue
      *     cannot be cast to org.apache.spark.sql.Row
      */
     protected void functionError() {
@@ -203,6 +204,25 @@ public class Filter implements Function {
             org.apache.spark.sql.Dataset<Row> ds = session.sql("select c_name as name, c_workyear as value from user_c limit 100");
             JavaRDD<KeyValue> rows = ds.toJavaRDD().filter(new DoFilter<>()).map(KeyValue::new);
             RDD<KeyValue> rdd = rows.filter(new DoFilter<>()).rdd();
+            System.out.println("----------rdd---------" + rdd.count());
+        } finally {
+            if (session != null) {
+                session.close();
+            }
+        }
+    }
+
+    /**
+     * lambda同一函数也是ok
+     */
+    protected void functionLambdaFunction() {
+        SparkSession session = null;
+        try {
+            session = SparkSession.builder().appName("filter")
+                    .enableHiveSupport().getOrCreate();
+            org.apache.spark.sql.Dataset<Row> ds = session.sql("select c_name as name, c_workyear as value from user_c limit 100");
+            JavaRDD<KeyValue> rows = ds.toJavaRDD().filter(v1 -> nonNull(v1)).map(KeyValue::new);
+            RDD<KeyValue> rdd = rows.filter(v1 -> nonNull(v1)).rdd();
             System.out.println("----------rdd---------" + rdd.count());
         } finally {
             if (session != null) {

@@ -1,10 +1,10 @@
 package com.github.yafeiwang1240;
 
-import com.github.yafeiwang1240.sparkoperator.problem.Filter;
+import com.github.yafeiwang1240.sparkoperator.problem.Map;
 
 public class Job {
     public static void main(String[] args) {
-        Function function = new Filter();
+        Function function = new Map();
         function.function();
     }
 }
