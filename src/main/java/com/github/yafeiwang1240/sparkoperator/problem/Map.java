@@ -20,7 +20,7 @@ import java.util.Objects;
  *
  * no error
  * <p>
- *     自定义lambda不会报错{@link #functionLambda()} ()}
+ *     自定义lambda不会报错{@link #functionLambda()}
  * </p>
  *
  * @author wangyafei

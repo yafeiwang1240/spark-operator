@@ -26,7 +26,7 @@ import java.util.Objects;
  *     自定义lambda不会报错{@link #functionLambda()} ()}
  *     不同的lambda不会报错{@link #functionLambda()} ()}
  *     匿名内部类不会报错{@link #functionAnon()} ()} ()}
- *     自定义模板类不会报错{@link #functionGenericClass()} ()} ()} ()}
+ *     自定义模板类不会报错{@link #functionGenericClass()}
  * </p>
  *
  * @author wangyafei
