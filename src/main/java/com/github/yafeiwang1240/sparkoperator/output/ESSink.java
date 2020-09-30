@@ -17,25 +17,30 @@ import java.util.Iterator;
 import java.util.Map;
 
 /**
- * output to redis
+ * output to es
  * @author wangyafei
  */
 public class ESSink implements Function {
 
+    static {
+        System.setProperty("es.set.netty.runtime.available.processors", "false");
+        System.setProperty("io.netty.noUnsafe", "false");
+    }
+
     @Override
     public void function() {
 
-        try(SparkSession session = SparkSession.builder().appName("redisSink")
+        try(SparkSession session = SparkSession.builder().appName("esSink")
                 .enableHiveSupport().getOrCreate()) {
-            org.apache.spark.sql.Dataset<Row> ds = session.sql("select c_name as name, c_workyear as value from user_c limit 100");
+            org.apache.spark.sql.Dataset<Row> ds = session.sql("select c_name as name, c_workyear as value, '20200930' as p_date from user_c limit 100");
             ds.foreachPartition(new ForeachPartitionFunction<Row>() {
                 @Override
                 public void call(Iterator<Row> t) throws Exception {
                     try (TransportClient client = new PreBuiltTransportClient(Settings.EMPTY)
-                            .addTransportAddress(new TransportAddress(InetAddress.getByName("127.0.0.1"), 9300));){
+                            .addTransportAddress(new TransportAddress(InetAddress.getByName("10.110.30.3"), 9300))){
                         while (t.hasNext()) {
                             Row row = t.next();
-                            client.index(new IndexRequest("index", "_doc")
+                            client.index(new IndexRequest("index_hive", "_doc")
                                     .source(rowToMap(row))).actionGet();
                         }
                     }
@@ -56,9 +61,16 @@ public class ESSink implements Function {
         }
         return map;
     }
+
     public static void main(String[] args) throws UnknownHostException {
         TransportClient client = new PreBuiltTransportClient(Settings.EMPTY)
-                .addTransportAddress(new TransportAddress(InetAddress.getByName("127.0.0.1"), 9300));
+                .addTransportAddress(new TransportAddress(InetAddress.getByName("10.110.30.3"), 9300));
+        Map<String, Object> map = new HashMap<>(3);
+        map.put("name", "wangyafei");
+        map.put("value", 1);
+        map.put("p_date", "20200930");
+        client.index(new IndexRequest("index_hive", "_doc")
+                .source(map)).actionGet();
         client.close();
     }
 }
