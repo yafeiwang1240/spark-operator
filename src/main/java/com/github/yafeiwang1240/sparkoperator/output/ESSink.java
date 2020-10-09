@@ -4,6 +4,7 @@ import com.github.yafeiwang1240.Function;
 import org.apache.spark.api.java.function.ForeachPartitionFunction;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
+import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
@@ -38,10 +39,18 @@ public class ESSink implements Function {
                 public void call(Iterator<Row> t) throws Exception {
                     try (TransportClient client = new PreBuiltTransportClient(Settings.EMPTY)
                             .addTransportAddress(new TransportAddress(InetAddress.getByName("10.110.30.3"), 9300))){
+                        BulkRequestBuilder bulk = client.prepareBulk();
                         while (t.hasNext()) {
                             Row row = t.next();
-                            client.index(new IndexRequest("index_hive", "_doc")
-                                    .source(rowToMap(row))).actionGet();
+                            bulk.add(new IndexRequest("index_hive", "_doc")
+                                    .source(rowToMap(row)));
+                            if (bulk.request().numberOfActions() >= 1024) {
+                                bulk.get();
+                                bulk = client.prepareBulk();
+                            }
+                        }
+                        if (bulk.request().numberOfActions() > 0) {
+                            bulk.get();
                         }
                     }
                 }
