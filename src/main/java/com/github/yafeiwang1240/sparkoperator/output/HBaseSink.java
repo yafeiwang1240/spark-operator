@@ -1,4 +1,4 @@
-package com.github.yafeiwang1240.sparkoperator.output.hive;
+package com.github.yafeiwang1240.sparkoperator.output;
 
 import com.github.yafeiwang1240.Function;
 import org.apache.commons.lang.StringUtils;
