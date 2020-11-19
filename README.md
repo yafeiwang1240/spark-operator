@@ -829,3 +829,12 @@ Spark运行时把广播变量数据发到各个节点，并保存下来，后续
 　　②代表V。
 　　③代表U。
 　　accumulator变量：允许做全局累加操作，如accumulator变量广泛使用在应用中记录当前的运行指标的情景。
+
+附：
+
+​    调试参数
+
+```
+spark-submit --master local[2] --class ${mainClass} --driver-java-options '-Djavax.security.auth.useSubjectCredsOnly=false -DSystemRuntimeEnvironment=qa -Darea=QA55 -Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=10005' ${jarFile} ${args...}
+```
+
