@@ -46,6 +46,9 @@ public class PartitionBy implements Function {
         newRdd.collect().stream().forEach(System.out::println);
     }
 
+    /**
+     * range partition
+     */
     protected void rangePartition() {
         SparkConf sparkConf = new SparkConf().setAppName("RangePartitioner");
         JavaSparkContext sc = new JavaSparkContext(sparkConf);
@@ -66,6 +69,9 @@ public class PartitionBy implements Function {
         });
     }
 
+    /**
+     * 自定义partition
+     */
     protected void customPartition() {
         SparkConf sparkConf = new SparkConf().setAppName("CustomPartition");
         JavaSparkContext sc = new JavaSparkContext(sparkConf);
