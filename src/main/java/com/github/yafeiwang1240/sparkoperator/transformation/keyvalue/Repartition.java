@@ -8,13 +8,17 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.ForeachFunction;
+import org.apache.spark.api.java.function.ForeachPartitionFunction;
 import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import scala.Tuple2;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
@@ -34,16 +38,22 @@ public class Repartition implements Function {
             session = SparkSession.builder().appName("repartition")
                     .enableHiveSupport().getOrCreate();
             org.apache.spark.sql.Dataset<Row> ds = session.sql("select * from repartition_test");
-            ds.foreach(new ForeachFunction<Row>() {
+            ds.foreachPartition(new ForeachPartitionFunction<Row>() {
                 @Override
-                public void call(Row row) throws Exception {
-                    System.out.println(row);
+                public void call(Iterator<Row> t) throws Exception {
+                    System.out.println("----------------repartition before-----------------");
+                    while (t.hasNext()) {
+                        System.out.println(t.next());
+                    }
                 }
             });
-            ds.repartition(2).foreach(new ForeachFunction<Row>() {
+            ds.repartition(2).foreachPartition(new ForeachPartitionFunction<Row>() {
                 @Override
-                public void call(Row row) throws Exception {
-                    System.out.println(row);
+                public void call(Iterator<Row> t) throws Exception {
+                    System.out.println("----------------repartition after-----------------");
+                    while (t.hasNext()) {
+                        System.out.println(t.next());
+                    }
                 }
             });
         } finally {
