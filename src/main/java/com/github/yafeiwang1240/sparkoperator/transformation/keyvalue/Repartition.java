@@ -24,7 +24,7 @@ import java.util.Random;
 
 /**
  * 说明：spark算子，repartition
- * 特点：单个RDD聚集
+ * 特点：key为partition的index值，index从2开始
  * 执行：repartition算子在executor端执行，触发shuffle write
  * sql: 无
  * @author wangyafei

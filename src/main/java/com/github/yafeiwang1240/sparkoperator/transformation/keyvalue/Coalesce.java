@@ -9,7 +9,7 @@ import java.util.Iterator;
 
 /**
  * 说明：spark算子，coalesce
- * 特点：单个RDD聚集
+ * 特点：key为partition的index值，index从2开始
  * 执行：coalesce算子在executor端执行, 不触发shuffle write
  * sql: 无
  * @author wangyafei
