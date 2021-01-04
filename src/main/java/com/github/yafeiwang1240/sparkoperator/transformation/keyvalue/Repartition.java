@@ -26,7 +26,7 @@ import java.util.Random;
  * 说明：spark算子，repartition
  * 特点：单个RDD聚集
  * 执行：repartition算子在executor端执行分区
- * sql: 开窗
+ * sql: 无
  * @author wangyafei
  */
 public class Repartition implements Function {
@@ -38,15 +38,6 @@ public class Repartition implements Function {
             session = SparkSession.builder().appName("repartition")
                     .enableHiveSupport().getOrCreate();
             org.apache.spark.sql.Dataset<Row> ds = session.sql("select * from repartition_test");
-            ds.foreachPartition(new ForeachPartitionFunction<Row>() {
-                @Override
-                public void call(Iterator<Row> t) throws Exception {
-                    System.out.println("----------------repartition before-----------------");
-                    while (t.hasNext()) {
-                        System.out.println(t.next());
-                    }
-                }
-            });
             ds.repartition(2).foreachPartition(new ForeachPartitionFunction<Row>() {
                 @Override
                 public void call(Iterator<Row> t) throws Exception {
