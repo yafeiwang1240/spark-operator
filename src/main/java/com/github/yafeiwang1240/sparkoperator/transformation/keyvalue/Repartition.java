@@ -25,15 +25,21 @@ import java.util.Random;
  * sql: 开窗
  * @author wangyafei
  */
-public class RePartition implements Function {
+public class Repartition implements Function {
 
     @Override
     public void function() {
         SparkSession session = null;
         try {
-            session = SparkSession.builder().appName("rePartition")
+            session = SparkSession.builder().appName("repartition")
                     .enableHiveSupport().getOrCreate();
-            org.apache.spark.sql.Dataset<Row> ds = session.sql("select c_name as name, c_workyear as value from user_c limit 100");
+            org.apache.spark.sql.Dataset<Row> ds = session.sql("select * from repartition_test");
+            ds.foreach(new ForeachFunction<Row>() {
+                @Override
+                public void call(Row row) throws Exception {
+                    System.out.println(row);
+                }
+            });
             ds.repartition(2).foreach(new ForeachFunction<Row>() {
                 @Override
                 public void call(Row row) throws Exception {
