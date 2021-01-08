@@ -843,5 +843,6 @@ spark-submit --master local[2] --class ${mainClass} --driver-java-options '-Djav
 ```
 spark.driver.userClassPathFirst=true
 spark.executor.userClassPathFirst=true
+// 注意事项，需要将和spark,hadoop的包设置为provided, 不然会有java.lang.ClassCastException
 ```
 
